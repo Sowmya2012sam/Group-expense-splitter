@@ -1,0 +1,470 @@
+
+<!DOCTYPE html>
+<html lang="en" ng-app="expenseApp">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Group Expense Splitter</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- AngularJS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+
+<body ng-controller="ExpenseController">
+
+    <!-- LOGIN PAGE -->
+    <div class="login-page" ng-if="!isLoggedIn">
+
+        <div class="login-box">
+
+            <h1>Group Expense Splitter</h1>
+
+            <p>Manage and Split Your Group Expenses Easily</p>
+
+            <form ng-submit="login()">
+
+                <label>Username</label>
+
+                <input type="text"
+                       ng-model="loginData.username"
+                       placeholder="Enter Username"
+                       required>
+
+                <label>Password</label>
+
+                <input type="password"
+                       ng-model="loginData.password"
+                       placeholder="Enter Password"
+                       required>
+
+                <button type="submit" class="primary-btn">
+                    Login
+                </button>
+
+            </form>
+
+            <p class="login-note">
+                Demo: Enter any non-empty username and password.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- MAIN DASHBOARD -->
+    <div class="main-container" ng-if="isLoggedIn">
+
+        <!-- HEADER -->
+        <header class="header">
+
+            <div>
+                <h2>Group Expense Splitter</h2>
+                <p>Manage your shared expenses</p>
+            </div>
+
+            <button class="logout-btn" ng-click="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <!-- WELCOME -->
+        <section class="welcome">
+
+            <h2>Welcome, {{loginData.username}}!</h2>
+
+            <p>Track expenses, split bills and manage payments.</p>
+
+        </section>
+
+
+        <!-- CREATE GROUP -->
+        <section class="panel">
+
+            <h3>Create Expense Group</h3>
+
+            <form ng-submit="createGroup()">
+
+                <div class="form-grid">
+
+                    <div>
+                        <label>Group Name</label>
+
+                        <input type="text"
+                               ng-model="groupData.name"
+                               placeholder="Example: Goa Trip"
+                               required>
+                    </div>
+
+                    <div>
+                        <label>Select Number of Members</label>
+
+                        <select ng-model="groupData.memberCount"
+                                required>
+
+                            <option value="">Select Members</option>
+                            <option value="2">2 Members</option>
+                            <option value="3">3 Members</option>
+                            <option value="4">4 Members</option>
+                            <option value="5">5 Members</option>
+                            <option value="6">6 Members</option>
+                            <option value="7">7 Members</option>
+                            <option value="8">8 Members</option>
+                            <option value="9">9 Members</option>
+                            <option value="10">10 Members</option>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <label>Enter Member Names</label>
+
+                <textarea ng-model="groupData.memberNames"
+                          placeholder="Example: Rahul, Arun, Priya, Kiran"
+                          rows="2"
+                          required></textarea>
+
+                <button type="submit" class="primary-btn">
+                    Create Group
+                </button>
+
+            </form>
+
+            <div ng-if="groupName" class="group-info">
+
+                <h4>Current Group: {{groupName}}</h4>
+
+                <p>Total Members: {{members.length}}</p>
+
+                <p>
+                    Members:
+                    <span ng-repeat="member in members">
+                        {{member}}{{$last ? '' : ', '}}
+                    </span>
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- DASHBOARD SUMMARY -->
+        <section class="dashboard-cards">
+
+            <div class="summary-card blue">
+                <h4>Total Expenses</h4>
+                <h2>₹{{totalExpenses | number:2}}</h2>
+            </div>
+
+            <div class="summary-card green">
+                <h4>Paid Amount</h4>
+                <h2>₹{{paidAmount | number:2}}</h2>
+            </div>
+
+            <div class="summary-card red">
+                <h4>Pending Amount</h4>
+                <h2>₹{{pendingAmount | number:2}}</h2>
+            </div>
+
+            <div class="summary-card purple">
+                <h4>Total Members</h4>
+                <h2>{{members.length}}</h2>
+            </div>
+
+        </section>
+
+
+        <!-- ADD EXPENSE -->
+        <section class="panel">
+
+            <h3>Add New Expense</h3>
+
+            <form ng-submit="addExpense()">
+
+                <div class="form-grid">
+
+                    <div>
+                        <label>Expense Name</label>
+
+                        <input type="text"
+                               ng-model="expense.name"
+                               placeholder="Example: Food"
+                               required>
+                    </div>
+
+                    <div>
+                        <label>Expense Amount (₹)</label>
+
+                        <input type="number"
+                               ng-model="expense.amount"
+                               placeholder="Enter Amount"
+                               min="0.01"
+                               step="0.01"
+                               required>
+                    </div>
+
+                    <div>
+                        <label>Paid By</label>
+
+                        <select ng-model="expense.paidBy"
+                                ng-options="member for member in members"
+                                required>
+
+                            <option value="">Select Payer</option>
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <p class="info-text">
+                    Expense will be divided equally among all group members.
+                </p>
+
+                <button type="submit" class="primary-btn"
+                        ng-disabled="members.length < 2">
+                    Add Expense
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- INDIVIDUAL CONTRIBUTION -->
+        <section class="panel">
+
+            <h3>Individual Member Contributions</h3>
+
+            <p class="info-text">
+                Each member's equal share and payment status.
+            </p>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Member Name</th>
+                            <th>Total Share</th>
+                            <th>Paid Amount</th>
+                            <th>Pending Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <tr ng-repeat="member in memberSummary">
+
+                            <td>{{member.name}}</td>
+
+                            <td>₹{{member.totalShare | number:2}}</td>
+
+                            <td>₹{{member.paid | number:2}}</td>
+
+                            <td>₹{{member.pending | number:2}}</td>
+
+                            <td>
+                                <span class="status"
+                                      ng-class="member.pending > 0 ? 'unpaid' : 'paid'">
+
+                                    {{member.pending > 0 ? 'Pending' : 'Paid'}}
+
+                                </span>
+                            </td>
+
+                        </tr>
+
+                        <tr ng-if="memberSummary.length === 0">
+                            <td colspan="5">
+                                Create a group and add expenses first.
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- UNPAID NOTIFICATIONS -->
+        <section class="panel">
+
+            <h3>Payment Notifications</h3>
+
+            <div ng-if="unpaidPayments.length === 0"
+                 class="success-message">
+
+                All member payments are completed!
+
+            </div>
+
+            <div ng-repeat="payment in unpaidPayments"
+                 class="notification">
+
+                <div>
+                    <strong>{{payment.member}}</strong>
+                    has not paid ₹{{payment.amount | number:2}}
+                    for {{payment.expenseName}}.
+
+                </div>
+
+                <button class="paid-btn"
+                        ng-click="markAsPaid(payment.expenseId, payment.member)">
+
+                    Mark as Paid
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- GRAPHICAL REPRESENTATION -->
+        <section class="panel">
+
+            <h3>Transaction Graphical Representation</h3>
+
+            <div class="chart-summary">
+
+                <div class="chart-label">
+                    <span class="legend green-dot"></span>
+                    Paid Amount: ₹{{paidAmount | number:2}}
+                </div>
+
+                <div class="chart-label">
+                    <span class="legend red-dot"></span>
+                    Pending Amount: ₹{{pendingAmount | number:2}}
+                </div>
+
+            </div>
+
+            <div class="progress-container">
+
+                <div class="progress-paid"
+                     ng-style="{width: paidPercentage + '%'}">
+                </div>
+
+                <div class="progress-pending"
+                     ng-style="{width: pendingPercentage + '%'}">
+                </div>
+
+            </div>
+
+            <h3>Member-wise Pending Amount</h3>
+
+            <div class="member-chart"
+                 ng-repeat="member in memberSummary">
+
+                <div class="chart-heading">
+
+                    <span>{{member.name}}</span>
+
+                    <strong>₹{{member.pending | number:2}}</strong>
+
+                </div>
+
+                <div class="bar-background">
+
+                    <div class="bar-fill"
+                         ng-style="{width: member.pendingPercentage + '%'}">
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- TRANSACTION HISTORY -->
+        <section class="panel">
+
+            <h3>Transaction History and Reports</h3>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Date</th>
+                            <th>Expense</th>
+                            <th>Total Amount</th>
+                            <th>Paid By</th>
+                            <th>Individual Share</th>
+                            <th>Paid Members</th>
+                            <th>Pending Members</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <tr ng-repeat="item in expenses">
+
+                            <td>{{item.date}}</td>
+
+                            <td>{{item.name}}</td>
+
+                            <td>₹{{item.amount | number:2}}</td>
+
+                            <td>{{item.paidBy}}</td>
+
+                            <td>₹{{item.share | number:2}}</td>
+
+                            <td>{{item.paidCount}}</td>
+
+                            <td>{{item.pendingCount}}</td>
+
+                        </tr>
+
+                        <tr ng-if="expenses.length === 0">
+
+                            <td colspan="7">
+                                No transaction history available.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- TOAST NOTIFICATION -->
+        <div id="toast" class="toast"></div>
+
+
+        <footer>
+            <p>Group Expense Splitter | Expense Management System</p>
+        </footer>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
